@@ -1,4 +1,9 @@
 #!/bin/bash
+pangTellmessage() {
+    echo -e "\t\ttellwar unzip <filename>"
+    echo -e "\t\ttellwar zip <directory>"
+    echo -e "\n\tNote: Make sure that the <filename> or <directory> exists.\n"
+}
 
 pangTellunzip() {
     if [ ! -f "$1.war" ]; then
@@ -23,11 +28,32 @@ pangTellzip() {
     fi
 }
 
-pangTellmessage() {
-    echo -e "\t\ttellwar unzip <filename>"
-    echo -e "\t\ttellwar zip <directory>"
-    echo -e "\n\tNote: Make sure that the <filename> or <directory> exists.\n"
+pangTelldeploy() {
+    if [ ! -d "$1" ]; then
+        echo "There is no '$1' directory."
+        exit
+    elif [ ! -d "$2" ]; then
+        echo "There is no '$1' directory."
+        exit
+    else
+        echo "Deploying $1 project..."
+        cp -r $1/* $2/
+        echo "Done!"
+    fi
 }
+
+pangTellserve() {
+    if [ ! -d "$1" ]; then
+        echo "There is no '$1' directory."
+        exit
+    else
+        echo "Serving..."
+        sh $1/bin/wso2server.sh
+        echo "Done!"
+        exit
+    fi
+}
+
 
 if [ $# -eq 0 ]; then
     printf "\n Use 'tellwar' as follows:\n\n"
@@ -36,16 +62,31 @@ if [ $# -eq 0 ]; then
 elif [ $# -eq 1 ]; then
     echo "There is only one argument. Please supply at least two arguments."
     exit
-else
+elif [ $# -eq 2 ]; then
     if [ "$1" = "unzip" ]; then
         pangTellunzip $2
         exit
     elif [ "$1" = "zip" ]; then
         pangTellzip $2
         exit
+    elif [ "$1" = "serve" ]; then
+        pangTellserve $2
+        exit
     else
         printf "\n'$1' is not a valid command. The valid commands are:\n\n"
         pangTellmessage $1
         exit
     fi
+elif [ $# -eq 3 ]; then
+    if [ "$1" = "deploy" ]; then
+        pangTelldeploy $2 $3
+        exit
+    else
+        printf "\n'$1' is not a valid command. The valid commands are:\n\n"
+        pangTellmessage $1
+        exit
+    fi
+else
+    printf "There is only a limit of 3 arguments."
+    exit
 fi
