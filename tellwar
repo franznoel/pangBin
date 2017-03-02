@@ -1,0 +1,51 @@
+#!/bin/bash
+
+pangTellunzip() {
+    if [ ! -f "$1.war" ]; then
+        echo "The '$1.war' file does not exist."
+        exit
+    else
+        echo "Extracting $1.war file..."
+        mkdir $1
+        unzip $1.war -d $1/
+        echo "Done!"
+    fi
+}
+
+pangTellzip() {
+    if [ ! -d "$1" ]; then
+        echo "There is no '$1' directory."
+    else
+        echo "Zipping $1.war file..."
+        jar -cvf $1.war $1/*
+        rm -rf $1
+        echo "Done!"
+    fi
+}
+
+pangTellmessage() {
+    echo -e "\t\ttellwar unzip <filename>"
+    echo -e "\t\ttellwar zip <directory>"
+    echo -e "\n\tNote: Make sure that the <filename> or <directory> exists.\n"
+}
+
+if [ $# -eq 0 ]; then
+    printf "\n Use 'tellwar' as follows:\n\n"
+    pangTellmessage
+    exit
+elif [ $# -eq 1 ]; then
+    echo "There is only one argument. Please supply at least two arguments."
+    exit
+else
+    if [ "$1" = "unzip" ]; then
+        pangTellunzip $2
+        exit
+    elif [ "$1" = "zip" ]; then
+        pangTellzip $2
+        exit
+    else
+        printf "\n'$1' is not a valid command. The valid commands are:\n\n"
+        pangTellmessage $1
+        exit
+    fi
+fi
