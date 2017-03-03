@@ -1,92 +1,160 @@
 #!/bin/bash
-pangTellmessage() {
-    echo -e "\t\ttellwar unzip <filename>"
-    echo -e "\t\ttellwar zip <directory>"
-    echo -e "\n\tNote: Make sure that the <filename> or <directory> exists.\n"
+webapps="/home/ftanglao/Github/wso2is/repository/deployment/server/webapps"
+webappsServer="/home/ftanglao/server/wso2is/repository/deployment/server/webapps"
+server="/home/ftanglao/server/wso2is"
+serverFile="$server/bin/wso2server.sh"
+
+pangHelpMessage() {
+    echo -e "\ttellwar serve"
+    echo -e "\ttellwar deploy-server"
+    echo -e "\ttellwar change-file <webapps_filename>"
+    echo -e "\ttellwar unzip <filename>"
+    echo -e "\ttellwar zip <directory>"
+    echo -e "\n Note: Make sure that the <filename> or <directory> exists.\n"
+    exit
 }
 
-pangTellunzip() {
+pangTellUnzip() {
     if [ ! -f "$1.war" ]; then
         echo "The '$1.war' file does not exist."
         exit
     else
         echo "Extracting $1.war file..."
-        mkdir $1
-        unzip $1.war -d $1/
+        mkdir $webapps/$1
+        echo "unzip $webapps/$1.war -d $webapps/$1/"
+        unzip $webapps/$1.war -d $webapps/$1/
         echo "Done!"
+        exit
     fi
 }
 
-pangTellzip() {
-    if [ ! -d "$1" ]; then
-        echo "There is no '$1' directory."
+pangTellZip() {
+    currentDir=$(pwd)
+    if [ ! -d "$webapps/$1" ]; then
+        echo "There is no '$1' directory. "
     else
         echo "Zipping $1.war file..."
-        jar -cvf $1.war $1/*
-        rm -rf $1
+        echo "jar -cvf $webapps/$1.war $webapps/$1/*"
+        cd $webapps/$1
+        jar -cvf $1.war *
+        cd $webapps
+        mv $1/$1.war .
+        rm -rf $1/
+        # cd  $currentDir
         echo "Done!"
+        exit
     fi
 }
 
-pangTelldeploy() {
-    if [ ! -d "$1" ]; then
-        echo "There is no '$1' directory."
+pangTellShow() {
+    if [ ! -f "$webapps/$1.war" ]; then
+        echo "The '$1.war' file does not exist."
+    else
+        echo "Contents of $1.war file:"
+        # echo "jar tvf $webapps/$1.war"
+        jar tvf $webapps/$1.war
         exit
-    elif [ ! -d "$2" ]; then
-        echo "There is no '$1' directory."
+    fi
+}
+
+
+pangTellChangeFile() {
+    if [ ! -f "$webapps/$1.war" ]; then
+        echo "The '$1.war' file does not exist. Cannot change file."
+        exit
+    else
+        echo "Changing file..."
+        echo "From: $webapps/$1.war"
+        echo "To: $webappsServer/$1.war"
+        cp $webapps/$1.war $webappsServer/$1.war
+        rm -rf $webappsServer/$1
+        echo "Done!"
+        exit
+    fi
+}
+
+pangTellDeployServer() {
+    if [ ! -d "$webappsServer" ]; then
+        echo -e "\n\t\tEither The directory does not exist or the server has not been setup.\n"
         exit
     else
         echo "Deploying $1 project..."
-        cp -r $1/* $2/
+        # echo "cp -r $webapps/$1/* $2/"
+        cp -r $webapps/$1/* $2/
         echo "Done!"
+        exit
     fi
 }
 
-pangTellserve() {
-    if [ ! -d "$1" ]; then
-        echo "There is no '$1' directory."
-        exit
+pangTellServe() {
+    echo "Serving..."
+    # echo "sh $serverFile"
+    if [ $# -eq 1 ]; then
+        if [ "$1" = "--logs" ]; then
+            sh $serverFile
+            exit
+        else
+            echo "There is no such thing as 'tellwar serve $1' command"
+            exit
+        fi
     else
-        echo "Serving..."
-        sh $1/bin/wso2server.sh
-        echo "Done!"
-        exit
+        screen -dmS wso2is
+        screen -S "wso2is" -p 0 -X stuff "sh $serverFile $(printf \\r)"
+        screen -ls
     fi
+    echo "Done!"
+    exit
+}
+
+pangTellStopServer() {
+    echo "Stopping Server..."
+    # screen -S "wso2is" -p 0 -X stuff "sh $serverFile $(printf \\r)"
+    screen -X -S "wso2is" quit
+    echo "Done!"
 }
 
 
 if [ $# -eq 0 ]; then
-    printf "\n Use 'tellwar' as follows:\n\n"
-    pangTellmessage
+    printf "\n Try using 'tellwar help':\n\n"
     exit
 elif [ $# -eq 1 ]; then
-    echo "There is only one argument. Please supply at least two arguments."
-    exit
-elif [ $# -eq 2 ]; then
-    if [ "$1" = "unzip" ]; then
-        pangTellunzip $2
-        exit
-    elif [ "$1" = "zip" ]; then
-        pangTellzip $2
+    if [ "$1" = "deploy-server" ]; then
+        pangTellDeployServer
         exit
     elif [ "$1" = "serve" ]; then
-        pangTellserve $2
+        pangTellServe
+        exit
+    elif [ "$1" = "stop-server" ]; then
+        pangTellStopServer
+        exit
+    elif [ "$1" = "help" ]; then
+        echo -e "\n Available commands:\n"
+        pangHelpMessage
         exit
     else
-        printf "\n'$1' is not a valid command. The valid commands are:\n\n"
-        pangTellmessage $1
-        exit
+        printf "'tellwar $1' is not a valid command. Try using 'tellwar help'\n"
     fi
-elif [ $# -eq 3 ]; then
-    if [ "$1" = "deploy" ]; then
-        pangTelldeploy $2 $3
+elif [ $# -eq 2 ]; then
+    if [ "$1" = "unzip" ]; then
+        pangTellUnzip $2
+        exit
+    elif [ "$1" = "zip" ]; then
+        pangTellZip $2
+        exit
+    elif [ "$1" = "change-file" ]; then
+        pangTellChangeFile $2
+        exit
+    elif [ "$1" = "show" ]; then
+        pangTellShow $2
+        exit
+    elif [ "$1" = "serve" ]; then
+        pangTellServe $2
         exit
     else
-        printf "\n'$1' is not a valid command. The valid commands are:\n\n"
-        pangTellmessage $1
+        printf "'tellwar $1' is not a valid command. Try using 'tellwar help'\n"
         exit
     fi
 else
-    printf "There is only a limit of 3 arguments."
+    printf "There is only a limit of 2 arguments."
     exit
 fi
