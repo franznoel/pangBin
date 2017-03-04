@@ -1,0 +1,88 @@
+#!/bin/bash
+
+gotodir=~/.gotodir
+
+pangGotoDirRegister() {
+    if [[ "$1" =~ "help"|"list"|"register"|"unregister" ]]; then
+        echo -e "'$1' is a reserved word"
+    elif [[ "$1" =~ [^A-Za-z0-9_] ]]; then
+        echo -e "Valid alias includes alphanumeric characters. '$1' is an invalid alias."
+        # TODO: Also check if the alias already exists
+    elif [ ! -d "$2" ]; then
+        echo -e "'$2' is not a valid directory."
+    else
+        if [ ! -f "$gotodir" ]; then
+            echo "$1:$2" > $gotodir
+        else
+            echo "$1:$2" >> $gotodir
+        fi
+        echo -e "Done Registering!"
+    fi
+}
+
+pangGotoDirUnregister() {
+    dirAliasNumber="$(grep ^$1: $gotodir | wc -l)"
+
+    if [ $dirAliasNumber -ge 1 ]; then
+        echo -e "Successfully Deleted $dirAliasNumber directory aliases for '$1':"
+        echo -e "$(grep ^$1: $gotodir)"
+        newData="$(grep -v "^$1:" $gotodir)"
+        echo $newData | tr " " "\n" > $gotodir
+    else
+        echo -e "'$1' is not listed as a directory alias."
+    fi
+}
+
+pangGotoDirList() {
+    if [ ! -f $gotodir ]; then
+        echo -e "You have not registered any directory alias(es)."
+    else
+        echo "$(cat $gotodir)"
+    fi
+}
+
+pangGotoDir() {
+    for a in $(cat $gotodir)
+    do
+        dirAlias=$(echo "$a" | cut -d: -f1)
+        directory=$(echo "$a" | cut -d: -f2)
+        if [ "$dirAlias" = "$1" ]; then
+            cd $directory
+        fi
+    done
+}
+
+pangGotoDirHelp() {
+    echo -e "\n  Commands for 'gotodir':\n"
+    echo -e "    gotodir list"
+    echo -e "    gotodir register <directory_alias> <directory>"
+    echo -e "    gotodir unregister <directory_alias>"
+    echo -e "    gotodir <directory_alias>\n"
+}
+
+
+if [ $# -eq 0 ]; then
+    printf "Try using 'gotodir help'.\n"
+elif [ $# -eq 1 ]; then
+    if [ "$1" = "help" ]; then
+        pangGotoDirHelp
+    elif [ "$1" = "list" ]; then
+        pangGotoDirList
+    elif [ "$1" = "register" ]; then
+        echo -e "You have not indicated an alias or directory."
+    else
+        pangGotoDir $1
+    fi
+elif [ $# -eq 2 ]; then
+    if [ "$1" = "unregister" ]; then
+        pangGotoDirUnregister $2
+    elif [ "$1" = "register" ]; then
+        echo -e "Please indicate a directory."
+    else
+        echo -e "The command 'gotodir $1' is not a valid command."
+    fi
+elif [ $# -eq 3 ]; then
+    if [ "$1" = "register" ]; then
+        pangGotoDirRegister $2 $3
+    fi
+fi
